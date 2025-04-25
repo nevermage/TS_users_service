@@ -1,20 +1,33 @@
 import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
+import { Exclude } from 'class-transformer';
+import { Role } from './types/role';
 
 @Entity()
 @Unique(['email'])
 export class User {
   @PrimaryGeneratedColumn()
-  id?: number;
+  id: number;
 
   @Column()
-  name?: string;
+  name: string;
+
+  @Column({
+    type: 'enum',
+    enum: Role,
+    default: Role.User,
+  })
+  role: Role;
 
   @Column()
-  email?: string;
+  email: string;
 
   @Column()
-  isActive?: boolean;
+  isActive: boolean;
 
   @Column()
-  age?: number;
+  age: number;
+
+  @Exclude()
+  @Column()
+  password: string;
 }

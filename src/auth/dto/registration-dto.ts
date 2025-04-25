@@ -1,11 +1,12 @@
 import { IsEmail, IsInt, IsString, Min } from 'class-validator';
 
-export class CreateUserDto {
+export class RegistrationDto {
   @IsString()
-  name: string;
-
   @IsEmail()
   email: string;
+
+  @IsString()
+  name: string;
 
   @IsInt()
   @Min(18)

@@ -1,9 +1,11 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user-dto';
 import { UpdateUserDto } from './dto/update-user-dto';
 import { User } from './user.entity';
 import { DeleteResult, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { instanceToPlain } from 'class-transformer';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -12,24 +14,47 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  getAll(): Promise<User[]> {
-    return this.userRepository.find();
+  async getAll(): Promise<Omit<User, 'password'>[]> {
+    const users: User[] = await this.userRepository.find();
+    return instanceToPlain(users) as Omit<User, 'password'>[];
   }
 
-  getById(id: number): Promise<User | null> {
-    return this.userRepository.findOneBy({ id });
+  async getById(id: number): Promise<Omit<User, 'password'> | null> {
+    const user: User | null = await this.userRepository.findOneBy({ id });
+
+    if (!user) {
+      throw new HttpException(`User with id ${id} not found`, 404);
+    }
+
+    return instanceToPlain(user) as Omit<User, 'password'>;
   }
 
-  create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<Omit<User, 'password'>> {
+    const email = createUserDto.email;
+    const userExists = await this.userRepository.findOneBy({
+      email,
+    });
+
+    if (userExists) {
+      throw new BadRequestException(
+        `User with email ${email} already registered`,
+      );
+    }
+
     const user: User = new User();
     Object.assign(user, createUserDto);
-    user.isActive = false;
+    user.isActive = true;
+    user.password = await bcrypt.hash(createUserDto.password, 10);
 
-    return this.userRepository.save(user);
+    const createdUser: User = await this.userRepository.save(user);
+    return instanceToPlain(createdUser) as Omit<User, 'password'>;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user: User | null = await this.getById(id);
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<Omit<User, 'password'>> {
+    const user: User | null = await this.userRepository.findOneBy({ id });
 
     if (!user) {
       throw new HttpException(`User with id ${id} not found`, 400);
@@ -40,7 +65,8 @@ export class UsersService {
     );
     Object.assign(user, cleanDto);
 
-    return this.userRepository.save(user);
+    const updatedUser: User = await this.userRepository.save(user);
+    return instanceToPlain(updatedUser) as Omit<User, 'password'>;
   }
 
   delete(id: number): Promise<DeleteResult> {
