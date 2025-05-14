@@ -10,25 +10,31 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user-dto';
-import { UpdateUserDto } from './dto/update-user-dto';
+import { CreateUserDto, UpdateUserDto, SafeUserDto } from './dto';
 import { User } from './user.entity';
 import { DeleteResult } from 'typeorm';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from './types/role';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Get all users' })
+  @ApiResponse({ status: 200, type: [SafeUserDto] })
   getAll(): Promise<Omit<User, 'password'>[]> {
     return this.usersService.getAll();
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get user by id' })
+  @ApiResponse({ status: 200, type: SafeUserDto })
+  @ApiResponse({ status: 404, description: 'User not found' })
   getById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Omit<User, 'password'> | null> {
@@ -38,6 +44,9 @@ export class UsersController {
   @Post('/create')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiResponse({ status: 201, type: SafeUserDto })
+  @ApiResponse({ status: 400, description: 'User already exists' })
   create(
     @Body() createUserDto: CreateUserDto,
   ): Promise<Omit<User, 'password'>> {
@@ -47,6 +56,9 @@ export class UsersController {
   @Put('/update/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
+  @ApiOperation({ summary: 'Update user by id' })
+  @ApiResponse({ status: 200, type: SafeUserDto })
+  @ApiResponse({ status: 400, description: 'User not found' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
@@ -57,6 +69,8 @@ export class UsersController {
   @Delete('/delete/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
+  @ApiOperation({ summary: 'Delete user by id' })
+  @ApiResponse({ status: 200, type: DeleteResult })
   delete(@Param('id', ParseIntPipe) id: number): Promise<DeleteResult> {
     return this.usersService.delete(id);
   }
