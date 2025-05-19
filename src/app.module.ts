@@ -6,7 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
 import { AuthModule } from './auth/auth.module';
-import { RequestLoggerMiddleware } from './common/middlewares/request-logger.middleware';
+import { RequestLoggerMiddleware } from './common/middlewares';
 
 @Module({
   imports: [
