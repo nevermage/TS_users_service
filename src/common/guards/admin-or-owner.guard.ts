@@ -4,27 +4,21 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../decorators/roles.decorator';
 import { Role } from '../../users/types/role';
 import { JWTPayload } from '../../auth/types/jwtPayload';
 import { RequestWithUser } from '../types/requestWithUser';
 
 @Injectable()
-export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
-
+export class AdminOrOwnerGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (!requiredRoles) return true;
-
     const request: RequestWithUser = context.switchToHttp().getRequest();
     const user: JWTPayload = request.user;
 
-    if (!user || !user.role || !requiredRoles.includes(user.role)) {
+    if (user.role === Role.Admin) return true;
+
+    const requestedUserId: number = parseInt(request.params.id);
+
+    if (user.userId !== requestedUserId) {
       throw new ForbiddenException('Access denied');
     }
 

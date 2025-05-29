@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { instanceToPlain } from 'class-transformer';
 import { User } from '../users/user.entity';
 import { JWTPayload } from './types/jwtPayload';
+import { NotificationsGateway } from '../common/gateways/users-notifications.gateway';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly notificationGateway: NotificationsGateway,
   ) {}
 
   async login(loginDto: LoginDto): Promise<{ access_token: string }> {
@@ -66,6 +68,10 @@ export class AuthService {
     user.isActive = true;
 
     const savedUser: User = await this.userRepository.save(user);
+    this.notificationGateway.sendNotification(
+      `New user registered: ${user.email}`,
+    );
+
     return instanceToPlain(savedUser) as Omit<User, 'password'>;
   }
 }

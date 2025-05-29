@@ -1,6 +1,5 @@
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user-dto';
-import { UpdateUserDto } from './dto/update-user-dto';
+import { CreateUserDto, UpdateUserDto } from './dto';
 import { User } from './user.entity';
 import { DeleteResult, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -23,7 +22,7 @@ export class UsersService {
     const user: User | null = await this.userRepository.findOneBy({ id });
 
     if (!user) {
-      throw new HttpException(`User with id ${id} not found`, 404);
+      throw new HttpException(`User not found`, 404);
     }
 
     return instanceToPlain(user) as Omit<User, 'password'>;
@@ -57,7 +56,7 @@ export class UsersService {
     const user: User | null = await this.userRepository.findOneBy({ id });
 
     if (!user) {
-      throw new HttpException(`User with id ${id} not found`, 400);
+      throw new HttpException(`User not found`, 400);
     }
 
     const cleanDto = Object.fromEntries(
