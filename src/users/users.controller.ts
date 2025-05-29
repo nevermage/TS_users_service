@@ -16,8 +16,8 @@ import { DeleteResult } from 'typeorm';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from './types/role';
-import { RolesGuard } from '../common/guards/roles.guard';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AdminOrOwnerGuard, RolesGuard } from '../common/guards';
 
 @ApiTags('users')
 @Controller('users')
@@ -27,6 +27,8 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, type: [SafeUserDto] })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
   getAll(): Promise<Omit<User, 'password'>[]> {
     return this.usersService.getAll();
   }
@@ -35,6 +37,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user by id' })
   @ApiResponse({ status: 200, type: SafeUserDto })
   @ApiResponse({ status: 404, description: 'User not found' })
+  @UseGuards(JwtAuthGuard, RolesGuard, AdminOrOwnerGuard)
   getById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Omit<User, 'password'> | null> {
